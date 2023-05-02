@@ -3,7 +3,7 @@
 
 use cln_plugin::options::{ConfigOption, Value};
 use cln_plugin::{Builder, Error, Plugin};
-use ntfy::{Dispatcher, Payload};
+use ntfy::{Auth, Dispatcher, Payload};
 
 #[derive(Clone)]
 struct PluginState {
@@ -26,17 +26,17 @@ async fn main() -> Result<(), Error> {
         ))
         .option(ConfigOption::new(
             "clntfy-username",
-            Value::String(String::new()),
+            Value::OptString,
             "ntfy username",
         ))
         .option(ConfigOption::new(
             "clntfy-password",
-            Value::String(String::new()),
+            Value::OptString,
             "ntfy password",
         ))
         .option(ConfigOption::new(
             "clntfy-proxy",
-            Value::String(String::new()),
+            Value::OptString,
             "ntfy proxy",
         ))
         .subscribe("invoice_payment", invoice_payment_handler)
@@ -69,9 +69,24 @@ async fn main() -> Result<(), Error> {
         _ => panic!("clntfy-topic required"),
     };
 
-    let dispatcher = Dispatcher::builder(url).build()?;
+    let mut dispatcher = Dispatcher::builder(url);
 
-    let state = PluginState { dispatcher, topic };
+    if let Some(Value::String(username)) = plugin.option("clntfy-username") {
+        if let Some(Value::String(password)) = plugin.option("clntfy-password") {
+            dispatcher = dispatcher.credentials(Auth::new(username, password));
+        } else {
+            log::error!("clntfy-password missing");
+        }
+    }
+
+    if let Some(Value::String(proxy)) = plugin.option("clntfy-proxy") {
+        dispatcher = dispatcher.proxy(proxy);
+    }
+
+    let state = PluginState {
+        dispatcher: dispatcher.build()?,
+        topic,
+    };
     let plugin = plugin.start(state).await?;
 
     plugin.join().await?;
