@@ -24,7 +24,7 @@ Edit your `~/.lightning/config` file:
 
 ```
 plugin=/path/to/cln-ntfy
-ntfy-url=https://ntfy.sh              # Mandatory
+ntfy-url=https://ntfy.sh
 ```
 
 Custom options:
