@@ -4,21 +4,17 @@
 use cln_plugin::options::{ConfigOption, Value};
 use cln_plugin::{Builder, Error, Plugin};
 use ntfy::{Dispatcher, Payload};
-use tokio::sync::mpsc::{self, Sender};
 
 type Result<T, E = Box<dyn std::error::Error>> = std::result::Result<T, E>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct PluginState {
-    sender: Sender<Payload>,
+    dispatcher: Dispatcher,
+    topic: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let (sender, mut receiver) = mpsc::channel(1024);
-
-    let state = PluginState { sender };
-
     let plugin = match Builder::new(tokio::io::stdin(), tokio::io::stdout())
         .option(ConfigOption::new(
             "clntfy-url",
@@ -56,33 +52,29 @@ async fn main() -> Result<()> {
     let url: String = match plugin.option("clntfy-url") {
         Some(Value::String(url)) => {
             if url.is_empty() {
-                panic!("'clntfy-url' required")
+                panic!("clntfy-url required")
             } else {
                 url
             }
         }
-        _ => panic!("'clntfy-url' required"),
+        _ => panic!("clntfy-url required"),
     };
 
-    match plugin.option("clntfy-topic") {
+    let topic: String = match plugin.option("clntfy-topic") {
         Some(Value::String(topic)) => {
             if topic.is_empty() {
-                panic!("'clntfy-topic' required")
+                panic!("clntfy-topic required")
+            } else {
+                topic
             }
         }
-        _ => panic!("'clntfy-topic' required"),
+        _ => panic!("clntfy-topic required"),
     };
 
-    let dispatcher = Dispatcher::builder(url)
-        /* .credentials(Auth::new("username", "password")) // Add optional credentials
-        .proxy("socks5h://127.0.0.1:9050") // Add optional proxy */
-        .build()?; // Build dispatcher
+    let dispatcher = Dispatcher::builder(url).build()?;
 
+    let state = PluginState { dispatcher, topic };
     let plugin = plugin.start(state).await?;
-
-    while let Some(payload) = receiver.recv().await {
-        dispatcher.send(&payload).await?;
-    }
 
     plugin.join().await?;
 
@@ -94,19 +86,12 @@ async fn invoice_payment_handler(
     v: serde_json::Value,
 ) -> Result<(), Error> {
     log::info!("Got a invoice payment notification: {v}");
-
-    if let Some(Value::String(topic)) = p.option("clntfy-topic") {
-        let amount_msat = &v["invoice_payment"]["amount_msat"];
-        let amount: usize = serde_json::from_value(amount_msat.clone())?;
-        let amount: u64 = (amount / 1000) as u64;
-
-        let payload = Payload::new(topic)
-            .message(format!("+{amount} sat"))
-            .title("New payment received");
-        p.state().sender.send(payload).await?;
-    } else {
-        log::error!("ntfy 'topic' not found");
-    }
-
+    let amount_msat = &v["invoice_payment"]["amount_msat"];
+    let amount: usize = serde_json::from_value(amount_msat.clone())?;
+    let amount: u64 = (amount / 1000) as u64;
+    let payload = Payload::new(&p.state().topic)
+        .message(format!("+{amount} sat"))
+        .title("New payment received");
+    p.state().dispatcher.send(&payload).await?;
     Ok(())
 }
