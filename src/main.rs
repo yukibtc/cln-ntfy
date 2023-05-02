@@ -5,8 +5,6 @@ use cln_plugin::options::{ConfigOption, Value};
 use cln_plugin::{Builder, Error, Plugin};
 use ntfy::{Dispatcher, Payload};
 
-type Result<T, E = Box<dyn std::error::Error>> = std::result::Result<T, E>;
-
 #[derive(Clone)]
 struct PluginState {
     dispatcher: Dispatcher,
@@ -14,7 +12,7 @@ struct PluginState {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Error> {
     let plugin = match Builder::new(tokio::io::stdin(), tokio::io::stdout())
         .option(ConfigOption::new(
             "clntfy-url",
@@ -85,13 +83,18 @@ async fn invoice_payment_handler(
     p: Plugin<PluginState>,
     v: serde_json::Value,
 ) -> Result<(), Error> {
-    log::info!("Got a invoice payment notification: {v}");
-    let amount_msat = &v["invoice_payment"]["amount_msat"];
-    let amount: usize = serde_json::from_value(amount_msat.clone())?;
-    let amount: u64 = (amount / 1000) as u64;
+    log::debug!("Got a invoice payment notification: {v}");
+    let amount: u64 = extract_amount(v)?;
     let payload = Payload::new(&p.state().topic)
         .message(format!("+{amount} sat"))
         .title("New payment received");
     p.state().dispatcher.send(&payload).await?;
     Ok(())
+}
+
+fn extract_amount(value: serde_json::Value) -> Result<u64, Error> {
+    let amount_msat = &value["invoice_payment"]["msat"];
+    let amount_str: String = serde_json::from_value(amount_msat.clone())?;
+    let amount: usize = amount_str[..amount_str.len() - 4].parse()?;
+    Ok((amount / 1000) as u64)
 }
