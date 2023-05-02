@@ -1,4 +1,8 @@
-# Ntfy plugin for CLN
+# CLN plugin for ntfy
+
+## Description
+
+Core Lightning plugin for sending `ntfy` alerts.
 
 ## Clone
 
