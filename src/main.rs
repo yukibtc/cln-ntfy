@@ -15,27 +15,27 @@ struct PluginState {
 async fn main() -> Result<(), Error> {
     let plugin = match Builder::new(tokio::io::stdin(), tokio::io::stdout())
         .option(ConfigOption::new(
-            "clntfy-url",
+            "ntfy-url",
             Value::String(String::new()),
             "ntfy url",
         ))
         .option(ConfigOption::new(
-            "clntfy-topic",
+            "ntfy-topic",
             Value::String(String::from("cln-alerts")),
             "ntfy topic",
         ))
         .option(ConfigOption::new(
-            "clntfy-username",
+            "ntfy-username",
             Value::OptString,
             "ntfy username",
         ))
         .option(ConfigOption::new(
-            "clntfy-password",
+            "ntfy-password",
             Value::OptString,
             "ntfy password",
         ))
         .option(ConfigOption::new(
-            "clntfy-proxy",
+            "ntfy-proxy",
             Value::OptString,
             "ntfy proxy",
         ))
@@ -47,39 +47,39 @@ async fn main() -> Result<(), Error> {
         None => return Ok(()),
     };
 
-    let url: String = match plugin.option("clntfy-url") {
+    let url: String = match plugin.option("ntfy-url") {
         Some(Value::String(url)) => {
             if url.is_empty() {
-                panic!("clntfy-url required")
+                panic!("ntfy-url required")
             } else {
                 url
             }
         }
-        _ => panic!("clntfy-url required"),
+        _ => panic!("ntfy-url required"),
     };
 
-    let topic: String = match plugin.option("clntfy-topic") {
+    let topic: String = match plugin.option("ntfy-topic") {
         Some(Value::String(topic)) => {
             if topic.is_empty() {
-                panic!("clntfy-topic required")
+                panic!("ntfy-topic required")
             } else {
                 topic
             }
         }
-        _ => panic!("clntfy-topic required"),
+        _ => panic!("ntfy-topic required"),
     };
 
     let mut dispatcher = Dispatcher::builder(url);
 
-    if let Some(Value::String(username)) = plugin.option("clntfy-username") {
-        if let Some(Value::String(password)) = plugin.option("clntfy-password") {
+    if let Some(Value::String(username)) = plugin.option("ntfy-username") {
+        if let Some(Value::String(password)) = plugin.option("ntfy-password") {
             dispatcher = dispatcher.credentials(Auth::new(username, password));
         } else {
-            log::error!("clntfy-password missing");
+            log::error!("ntfy-password missing");
         }
     }
 
-    if let Some(Value::String(proxy)) = plugin.option("clntfy-proxy") {
+    if let Some(Value::String(proxy)) = plugin.option("ntfy-proxy") {
         dispatcher = dispatcher.proxy(proxy);
     }
 
