@@ -102,7 +102,8 @@ async fn invoice_payment_handler(
     let amount: u64 = extract_amount(v)?;
     let payload = Payload::new(&p.state().topic)
         .message(format!("+{amount} sat"))
-        .title("New payment received");
+        .title("New payment received")
+        .tags(vec!["zap"]);
     p.state().dispatcher.send(&payload).await?;
     Ok(())
 }
