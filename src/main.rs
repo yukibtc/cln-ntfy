@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
 
     let state = PluginState { sender };
 
-    let plugin = match Builder::new(state, tokio::io::stdin(), tokio::io::stdout())
+    let plugin = match Builder::new(tokio::io::stdin(), tokio::io::stdout())
         .option(ConfigOption::new(
             "clntfy-url",
             Value::String(String::new()),
@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
         .proxy("socks5h://127.0.0.1:9050") // Add optional proxy */
         .build()?; // Build dispatcher
 
-    let plugin = plugin.start().await?;
+    let plugin = plugin.start(state).await?;
 
     while let Some(payload) = receiver.recv().await {
         dispatcher.send(&payload).await?;
