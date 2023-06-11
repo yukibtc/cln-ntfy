@@ -1,6 +1,6 @@
 [package]
 name = "cln-ntfy"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "CLN plugin for ntfy"
 authors = ["Yuki Kishimoto <yukikishimoto@proton.me>"]
