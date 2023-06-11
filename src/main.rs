@@ -39,6 +39,8 @@ async fn main() -> Result<(), Error> {
             Value::OptString,
             "ntfy proxy",
         ))
+        .subscribe("channel_opened", channel_opened_handler)
+        .subscribe("invoice_creation", invoice_creation_handler)
         .subscribe("invoice_payment", invoice_payment_handler)
         .configure()
         .await?
@@ -91,6 +93,29 @@ async fn main() -> Result<(), Error> {
 
     plugin.join().await?;
 
+    Ok(())
+}
+
+async fn channel_opened_handler(p: Plugin<PluginState>, v: serde_json::Value) -> Result<(), Error> {
+    log::debug!("Got a channel opened notification: {v}");
+    let payload = Payload::new(&p.state().topic)
+        .title("New channel opened")
+        .tags(vec!["white_check_mark"]);
+    p.state().dispatcher.send(&payload).await?;
+    Ok(())
+}
+
+async fn invoice_creation_handler(
+    p: Plugin<PluginState>,
+    v: serde_json::Value,
+) -> Result<(), Error> {
+    log::debug!("Got a invoice creation notification: {v}");
+    let amount: u64 = extract_amount(v)?;
+    let payload = Payload::new(&p.state().topic)
+        .message(format!("+{amount} sat"))
+        .title("New invoice created")
+        .tags(vec!["hourglass"]);
+    p.state().dispatcher.send(&payload).await?;
     Ok(())
 }
 
