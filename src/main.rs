@@ -5,6 +5,10 @@ use cln_plugin::options::{ConfigOption, Value};
 use cln_plugin::{Builder, Error, Plugin};
 use ntfy::{Auth, Dispatcher, Payload};
 
+mod util;
+
+use self::util::format;
+
 #[derive(Clone)]
 struct PluginState {
     dispatcher: Dispatcher,
@@ -112,7 +116,7 @@ async fn invoice_creation_handler(
     log::debug!("Got a invoice creation notification: {v}");
     let amount: u64 = extract_amount(v)?;
     let payload = Payload::new(&p.state().topic)
-        .message(format!("+{amount} sat"))
+        .message(format!("+{} sat", format::number(amount)))
         .title("New invoice created")
         .tags(vec!["hourglass"]);
     p.state().dispatcher.send(&payload).await?;
@@ -126,7 +130,7 @@ async fn invoice_payment_handler(
     log::debug!("Got a invoice payment notification: {v}");
     let amount: u64 = extract_amount(v)?;
     let payload = Payload::new(&p.state().topic)
-        .message(format!("+{amount} sat"))
+        .message(format!("+{} sat", format::number(amount)))
         .title("New payment received")
         .tags(vec!["zap"]);
     p.state().dispatcher.send(&payload).await?;
