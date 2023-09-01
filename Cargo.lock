@@ -102,9 +102,9 @@ dependencies = [
 
 [[package]]
 name = "cln-plugin"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e59ac0c0944b5f43bf8008b8495a3b0d0036e4c208fa34d8575aaff93694e197"
+checksum = "1098794b7562120ec5caa7b768847655fd5249088676a8d8ba9110a01becf97b"
 dependencies = [
  "anyhow",
  "bytes",
